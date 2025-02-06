@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "254951500936",
+    "project_id": "faruq-auth",
+    "storage_bucket": "faruq-auth.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:254951500936:android:1aee69ee8447ef357dc33d",
+        "android_client_info": {
+          "package_name": "com.example.faruqbase"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "254951500936-vle01ebps3imospda2kp4sh55ok763qm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDaeoN_8gzcj3ClOJqmSuqHLGeSPz4uLFU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "254951500936-vle01ebps3imospda2kp4sh55ok763qm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
