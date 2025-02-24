@@ -2,8 +2,11 @@ import 'package:faruqbase/services/auth_services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:faruqbase/pages/home/transaction.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lottie/lottie.dart'; // Import Lottie
+import 'package:flutter_masked_text2/flutter_masked_text2.dart'; // Import untuk MoneyMaskedTextController
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -14,31 +17,290 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
   final List<Map<String, dynamic>> _transactions = [];
+  double _totalBalance = 0; // Set total balance to 0 for new users
+  String _selectedFilter = 'All';
+  String _selectedCategory = 'All';
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTransactions();
+  }
+
+  void _fetchTransactions() async {
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('transactions').get();
+      List<Map<String, dynamic>> transactions = snapshot.docs.map((doc) {
+        return {
+          'id': doc.id, // Menyimpan ID dokumen untuk penghapusan dan pengeditan
+          'type': doc['type'],
+          'amount': doc['amount'],
+          'description': doc['description'],
+          'date': (doc['timestamp'] as Timestamp).toDate(),
+        };
+      }).toList();
+
+      setState(() {
+        _transactions.clear();
+        _transactions.addAll(transactions);
+        _totalBalance = _transactions.fold(0, (sum, item) {
+          return sum + (item['type'] == 'Income' ? item['amount'] : -item['amount']);
+        });
+      });
+    } catch (e) {
+      // Tampilkan pesan kesalahan jika gagal mengambil data
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil data: $e')),
+      );
+    }
+  }
 
   void _addTransaction(String type, double amount, String description) {
+    // Menentukan kategori berdasarkan deskripsi
+    String category = description; // Menggunakan deskripsi sebagai kategori
+    if (category != 'Makan' && category != 'Transport' && category != 'Gaji') {
+      category = 'Semua'; // Jika kategori tidak sesuai, masukkan ke kategori 'Semua'
+    }
+
     setState(() {
-      _transactions.add({
+      _transactions.insert(0, {
         'type': type,
         'amount': amount,
         'description': description,
+        'date': DateTime.now(),
       });
+      _totalBalance += type == 'Income' ? amount : -amount;
     });
+  }
+
+  void _editTransaction(String id, String type, double amount, String description) async {
+    try {
+      await FirebaseFirestore.instance.collection('transactions').doc(id).update({
+        'type': type,
+        'amount': amount,
+        'description': description,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      // Update local state
+      setState(() {
+        final index = _transactions.indexWhere((transaction) => transaction['id'] == id);
+        if (index != -1) {
+          _transactions[index] = {
+            'id': id,
+            'type': type,
+            'amount': amount,
+            'description': description,
+            'date': DateTime.now(),
+          };
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Transaksi berhasil diperbarui!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memperbarui transaksi: $e')),
+      );
+    }
+  }
+
+  void _deleteTransaction(String id) async {
+    // Menampilkan dialog konfirmasi sebelum menghapus
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi Hapus'),
+          content: const Text('Apakah Anda yakin ingin menghapus transaksi ini?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Menutup dialog
+              },
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  await FirebaseFirestore.instance.collection('transactions').doc(id).delete();
+
+                  setState(() {
+                    _transactions.removeWhere((transaction) => transaction['id'] == id);
+                    _totalBalance = _transactions.fold(0, (sum, item) {
+                      return sum + (item['type'] == 'Income' ? item['amount'] : -item['amount']);
+                    });
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Transaksi berhasil dihapus!')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Gagal menghapus transaksi: $e')),
+                  );
+                }
+                Navigator.of(context).pop(); // Menutup dialog setelah menghapus
+              },
+              child: const Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatCurrency(double amount) {
+    return NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0).format(amount);
+  }
+
+  List<Map<String, dynamic>> getFilteredTransactions() {
+    List<Map<String, dynamic>> filteredList = _transactions.where((transaction) {
+      final descriptionMatch = transaction['description'].toLowerCase().contains(_searchQuery.toLowerCase());
+      return descriptionMatch;
+    }).toList();
+
+    DateTime now = DateTime.now();
+
+    if (_selectedFilter == 'Monthly') {
+      filteredList = filteredList.where((transaction) {
+        DateTime date = transaction['date'];
+        return date.year == now.year && date.month == now.month;
+      }).toList();
+    } else if (_selectedFilter == 'Yearly') {
+      filteredList = filteredList.where((transaction) {
+        DateTime date = transaction['date'];
+        return date.year == now.year;
+      }).toList();
+    }
+
+    // Menampilkan semua transaksi jika kategori "Semua" dipilih
+    if (_selectedCategory == 'Semua') {
+      return filteredList; // Kembalikan semua transaksi yang sudah difilter berdasarkan pencarian
+    }
+
+    if (_selectedCategory != 'All') {
+      filteredList = filteredList.where((transaction) => transaction['description'] == _selectedCategory).toList();
+    }
+
+    return filteredList;
+  }
+
+  Widget _categoryButton(String label, IconData icon, Color color) {
+    bool isSelected = _selectedCategory == label;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedCategory = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.3) : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 5),
+            Text(label, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showEditDialog(Map<String, dynamic> transaction) {
+    final MoneyMaskedTextController _amountController = MoneyMaskedTextController(
+      decimalSeparator: ',',
+      thousandSeparator: '.',
+      leftSymbol: 'Rp ',
+      precision: 0,
+      initialValue: transaction['amount'],
+    );
+    final TextEditingController _descriptionController = TextEditingController(text: transaction['description']);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Transaksi'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _amountController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Jumlah'),
+              ),
+              TextField(
+                controller: _descriptionController,
+                decoration: const InputDecoration(labelText: 'Deskripsi'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                final double amount = _amountController.numberValue;
+                final String description = _descriptionController.text;
+
+                if (amount > 0 && description.isNotEmpty) {
+                  _editTransaction(transaction['id'], transaction['type'], amount, description);
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Masukkan jumlah dan deskripsi yang valid')),
+                  );
+                }
+              },
+              child: const Text('Simpan'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser ;
+    List<Map<String, dynamic>> filteredTransactions = getFilteredTransactions();
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text('Money Tracker',
-            style: GoogleFonts.raleway(fontWeight: FontWeight.bold)),
+        title: Text('Money Tracker', style: GoogleFonts.raleway(fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xff0D6EFD),
         actions: [
-          CircleAvatar(
-            backgroundColor: Colors.white,
-            child: Icon(Icons.person, color: Colors.blue.shade700),
+          DropdownButton<String>(
+            value: _selectedFilter,
+            icon: const Icon(Icons.filter_list, color: Colors.white),
+            dropdownColor: Colors.blue,
+            items: ['All', 'Monthly', 'Yearly'].map((String value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value, style: const TextStyle(color: Colors.white)),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedFilter = value!;
+              });
+            },
           ),
           IconButton(
             onPressed: () async {
@@ -54,19 +316,11 @@ class _HomeState extends State<Home> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Greeting
               Text(
-                'Hello👋, ${user?.email ?? 'Guest'}',
-                style: GoogleFonts.raleway(
-                  textStyle: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20),
-                ),
+                'Selamat Datang di Money Tracker\nby Muhammad Al-Faruq',
+                style: GoogleFonts.raleway(fontWeight: FontWeight.bold, fontSize: 20),
               ),
               const SizedBox(height: 20),
-              
-              // Balance Summary
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -77,63 +331,89 @@ class _HomeState extends State<Home> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Total Balance', style: GoogleFonts.raleway(fontSize: 16)),
-                    Text('Rp 5.000.000',
-                        style: GoogleFonts.raleway(
-                            fontSize: 22, fontWeight: FontWeight.bold)),
+                    Text(
+                      _formatCurrency(_totalBalance),
+                      style: GoogleFonts.raleway(fontSize: 26, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Quick Access Categories
+              Center(
+                child: Lottie.asset(
+                  'assets/home.json',
+                  height: 100,
+                  width: 100,
+                ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Cari transaksi...',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.search),
+                ),
+              ),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _categoryButton('Makan', Icons.fastfood, Colors.orange),
                   _categoryButton('Transport', Icons.directions_bus, Colors.blue),
                   _categoryButton('Gaji', Icons.attach_money, Colors.green),
-                  _categoryButton('Lainnya', Icons.more_horiz, Colors.grey),
+                  _categoryButton('Semua', Icons.more_horiz, Colors.grey), // Mengubah 'Lainnya' menjadi 'Semua'
                 ],
               ),
               const SizedBox(height: 20),
-
-              // Statistics Chart
-              SizedBox(
-                height: 200,
-                child: PieChart(
-                  PieChartData(
-                    sections: [
-                      PieChartSectionData(value: 30, color: Colors.red, title: 'Belanja'),
-                      PieChartSectionData(value: 50, color: Colors.green, title: 'Gaji'),
-                      PieChartSectionData(value: 20, color: Colors.blue, title: 'Transport'),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Recent Transactions
-              Text('Recent Transactions',
-                  style: GoogleFonts.raleway(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Transaksi Terbaru', style: GoogleFonts.raleway(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
               Expanded(
-                child: _transactions.isEmpty
+                child: filteredTransactions.isEmpty
                     ? const Center(child: Text('Belum ada transaksi'))
                     : ListView.builder(
-                        itemCount: _transactions.length,
+                        itemCount: filteredTransactions.length,
                         itemBuilder: (context, index) {
-                          final transaction = _transactions[index];
+                          final transaction = filteredTransactions[index];
                           final isIncome = transaction['type'] == 'Income';
-                          return ListTile(
-                            leading: Icon(
-                              isIncome ? Icons.attach_money : Icons.shopping_cart,
-                              color: isIncome ? Colors.green : Colors.red,
+                          return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 5),
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            title: Text(transaction['description']),
-                            subtitle: Text('Rp ${transaction['amount']}'),
-                            trailing: Text(
-                              '${isIncome ? '+' : '-'} Rp ${transaction['amount']}',
-                              style: TextStyle(color: isIncome ? Colors.green : Colors.red),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: isIncome ? Colors.green : Colors.red,
+                                child: Icon(
+                                  isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              title: Text(transaction['description']),
+                              subtitle: Text(DateFormat('dd MMM yyyy, HH:mm').format(transaction['date'])),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '${isIncome ? '+' : '-'} ${_formatCurrency(transaction['amount'])}',
+                                    style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      _deleteTransaction(transaction['id']);
+                                    },
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                _showEditDialog(transaction);
+                              },
                             ),
                           );
                         },
@@ -144,8 +424,6 @@ class _HomeState extends State<Home> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xff0D6EFD),
-        child: const Icon(Icons.add),
         onPressed: () {
           Navigator.push(
             context,
@@ -156,20 +434,9 @@ class _HomeState extends State<Home> {
             ),
           );
         },
+        backgroundColor: Colors.blue,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
-    );
-  }
-
-  Widget _categoryButton(String title, IconData icon, Color color) {
-    return Column(
-      children: [
-        CircleAvatar(
-          backgroundColor: color.withOpacity(0.2),
-          child: Icon(icon, color: color),
-        ),
-        const SizedBox(height: 5),
-        Text(title, style: GoogleFonts.raleway(fontSize: 12)),
-      ],
     );
   }
 }
