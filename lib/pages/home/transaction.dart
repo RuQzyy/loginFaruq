@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'home.dart'; // Pastikan untuk mengimpor halaman home
+import 'pie.dart'; // Pastikan untuk mengimpor halaman grafik
 
 class AddTransactionPage extends StatefulWidget {
   final void Function(String type, double amount, String description) onTransactionAdded;
@@ -25,7 +27,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   String? _selectedDescription;
   bool _isCustomDescription = false;
   final TextEditingController _customDescriptionController = TextEditingController();
-  final List<String> _descriptions = ['Makan', 'Gaji', 'Transport', 'Uang Semester', 'Shopping', 'Lainnya'];
+  final List<String> _descriptions = ['Makan', 'Gaji', 'Joki', 'Uang Semester', 'Shopping', 'Lainnya'];
   bool _isLoading = false;
 
   @override
@@ -33,7 +35,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Tambah Transaksi', style: GoogleFonts.raleway(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xff0D6EFD),
+        backgroundColor: const Color(0xFF293239), // Mengubah warna AppBar
       ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
@@ -57,6 +59,33 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
               ],
             ),
           ),
+        ),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home, color: Color(0xFF293239)),
+              onPressed: () {
+                // Navigasi ke halaman home
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Home()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+              onPressed: () {
+                // Navigasi ke halaman grafik
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PieChartPage()), // Ganti dengan nama kelas yang sesuai di pie.dart
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -139,7 +168,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       height: 50,
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xff0D6EFD),
+          backgroundColor: const Color(0xFF293239), // Mengubah warna tombol
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -164,9 +193,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   InputDecoration _inputDecoration() {
     return InputDecoration(
-      border: OutlineInputBorder(),
+      border: OutlineInputBorder (),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       hintStyle: TextStyle(color: Colors.grey.shade600),
+      filled: true,
+      fillColor: const Color(0xFFE3ECED), // Mengubah warna latar belakang input
     );
   }
 

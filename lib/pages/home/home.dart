@@ -7,6 +7,7 @@ import 'package:faruqbase/pages/home/transaction.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart'; // Import Lottie
 import 'package:flutter_masked_text2/flutter_masked_text2.dart'; // Import untuk MoneyMaskedTextController
+import 'package:faruqbase/pages/home/pie.dart'; // Import halaman grafik
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -59,7 +60,7 @@ class _HomeState extends State<Home> {
   void _addTransaction(String type, double amount, String description) {
     // Menentukan kategori berdasarkan deskripsi
     String category = description; // Menggunakan deskripsi sebagai kategori
-    if (category != 'Makan' && category != 'Transport' && category != 'Gaji') {
+    if (category != 'Makan' && category != 'Joki' && category != 'Gaji') {
       category = 'Semua'; // Jika kategori tidak sesuai, masukkan ke kategori 'Semua'
     }
 
@@ -200,7 +201,7 @@ class _HomeState extends State<Home> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.3) : Colors.grey.shade200,
+          color: isSelected ? color.withOpacity(0.3) : const Color(0xFFD2E5E9), // Menggunakan warna baru
           borderRadius: BorderRadius.circular(10),
           boxShadow: isSelected
               ? [BoxShadow(color: color.withOpacity(0.5), blurRadius: 8, spreadRadius: 2)]
@@ -277,19 +278,22 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser ;
+    final user = FirebaseAuth.instance.currentUser  ;
     List<Map<String, dynamic>> filteredTransactions = getFilteredTransactions();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFFFFFF), // Mengubah latar belakang menjadi putih
       appBar: AppBar(
-        title: Text('Money Tracker', style: GoogleFonts.raleway(fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xff0D6EFD),
+        title: Text(
+          'Money Tracker',
+          style: GoogleFonts.raleway(fontWeight: FontWeight.bold, color: Colors.white), // Mengubah warna tulisan
+        ),
+        backgroundColor: const Color(0xFF293239), // Mengubah warna latar belakang AppBar
         actions: [
           DropdownButton<String>(
             value: _selectedFilter,
             icon: const Icon(Icons.filter_list, color: Colors.white),
-            dropdownColor: Colors.blue,
+            dropdownColor: const Color(0xFF293239), // Mengubah warna dropdown
             items: ['All', 'Monthly', 'Yearly'].map((String value) {
               return DropdownMenuItem<String>(
                 value: value,
@@ -324,8 +328,11 @@ class _HomeState extends State<Home> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: const Color(0xFFD2E5E9), // Mengubah warna latar belakang
                   borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 5, spreadRadius: 2), // Menambahkan efek bayangan
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -363,10 +370,10 @@ class _HomeState extends State<Home> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  _categoryButton('Makan', Icons.fastfood, Colors.orange),
-                  _categoryButton('Transport', Icons.directions_bus, Colors.blue),
-                  _categoryButton('Gaji', Icons.attach_money, Colors.green),
-                  _categoryButton('Semua', Icons.more_horiz, Colors.grey), // Mengubah 'Lainnya' menjadi 'Semua'
+                  _categoryButton('Makan', Icons.fastfood, const Color(0xFF293239)), // Mengubah warna kategori
+                  _categoryButton('Joki', Icons.assignment, const Color(0xFF293239)), // Mengubah warna kategori
+                  _categoryButton('Gaji', Icons.attach_money, const Color(0xFF293239)), // Mengubah warna kategori
+                  _categoryButton('Semua', Icons.more_horiz, const Color(0xFF293239)), // Mengubah warna kategori
                 ],
               ),
               const SizedBox(height: 20),
@@ -423,6 +430,34 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
+     // Di bagian bottomNavigationBar
+bottomNavigationBar: BottomAppBar(
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.home, color: Color(0xFF293239)),
+        onPressed: () {
+          // Navigasi ke halaman home
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+          );
+        },
+      ),
+      IconButton(
+        icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+        onPressed: () {
+          // Navigasi ke halaman grafik
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PieChartPage()), // Ganti dengan nama kelas yang sesuai di pie.dart
+          );
+        },
+      ),
+    ],
+  ),
+),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -434,7 +469,7 @@ class _HomeState extends State<Home> {
             ),
           );
         },
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFF293239), // Mengubah warna tombol FAB
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
