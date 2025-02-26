@@ -17,6 +17,22 @@ class _PieChartPageState extends State<PieChartPage> {
   List<Map<String, dynamic>> _transactions = [];
   Map<String, double> _categoryTotals = {};
   bool _showIncome = true;
+  String _selectedMonth = 'All'; // Menyimpan bulan yang dipilih
+  final List<String> _months = [
+    'All',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
 
   @override
   void initState() {
@@ -38,6 +54,7 @@ class _PieChartPageState extends State<PieChartPage> {
             'type': doc['type'],
             'amount': doc['amount'],
             'description': doc['description'],
+            'date': (doc['timestamp'] as Timestamp).toDate(), // Menyimpan tanggal
           };
         }).toList();
 
@@ -58,6 +75,12 @@ class _PieChartPageState extends State<PieChartPage> {
     for (var transaction in _transactions) {
       String category = transaction['description'];
       double amount = transaction['amount'];
+      DateTime date = transaction['date'];
+
+      // Filter berdasarkan bulan yang dipilih
+      if (_selectedMonth != 'All') {
+        if (date.month != _getMonthIndex(_selectedMonth)) continue; // Jika bulan tidak cocok, lewati
+      }
 
       if (_showIncome && transaction['type'] == 'Income') {
         _categoryTotals[category] = (_categoryTotals[category] ?? 0) + amount;
@@ -68,6 +91,24 @@ class _PieChartPageState extends State<PieChartPage> {
 
     // Hapus kategori yang tidak dikenali
     _categoryTotals.removeWhere((key, value) => !_isKnownCategory(key));
+  }
+
+  int _getMonthIndex(String month) {
+    switch (month) {
+      case 'Januari': return 1;
+      case 'Februari': return 2;
+      case 'Maret': return 3;
+      case 'April': return 4;
+      case 'Mei': return 5;
+      case 'Juni': return 6;
+      case 'Juli': return 7;
+      case 'Agustus': return 8;
+      case 'September': return 9;
+      case 'Oktober': return 10;
+      case 'November': return 11;
+      case 'Desember': return 12;
+      default: return 0; // Untuk 'All'
+    }
   }
 
   bool _isKnownCategory(String category) {
@@ -90,6 +131,7 @@ class _PieChartPageState extends State<PieChartPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false, // Menghilangkan tombol kembali
         title: Text(
           'Grafik Pie Transaksi',
           style: GoogleFonts.raleway(fontWeight: FontWeight.bold, color: Colors.white),
@@ -98,6 +140,7 @@ class _PieChartPageState extends State<PieChartPage> {
       ),
       body: Column(
         children: [
+          _buildMonthDropdown(), // Menambahkan dropdown bulan
           _buildToggleButtons(),
           const SizedBox(height: 20),
           _buildTotalDisplay(),
@@ -105,7 +148,30 @@ class _PieChartPageState extends State<PieChartPage> {
           _buildLegend(),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(), // This line is now correct
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  Widget _buildMonthDropdown() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: DropdownButton<String>(
+        value: _selectedMonth,
+        icon: const Icon(Icons.calendar_today, color: Colors.black),
+        isExpanded: true,
+        items: _months.map((String month) {
+          return DropdownMenuItem<String>(
+            value: month,
+            child: Text(month == 'All' ? 'Semua Bulan' : month),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedMonth = value!;
+            _calculateCategoryTotals(); // Hitung ulang total kategori saat bulan berubah
+          });
+        },
+      ),
     );
   }
 
@@ -187,7 +253,7 @@ class _PieChartPageState extends State<PieChartPage> {
     );
   }
 
-  BottomAppBar _buildBottomNavigationBar() { // Changed return type to BottomAppBar
+  BottomAppBar _buildBottomNavigationBar() {
     return BottomAppBar(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
