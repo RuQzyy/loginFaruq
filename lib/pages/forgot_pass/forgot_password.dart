@@ -18,10 +18,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFFFFFF), // Latar belakang putih
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF1E3C72), Color(0xFF2A5298)], // Gradien biru
+            colors: [
+              Color(0xFFD2E5E9), // Warna gradasi pertama
+              Color(0xFFE3ECED), // Warna gradasi kedua
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -49,14 +53,14 @@ class _ForgotPasswordState extends State<ForgotPassword> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.email, color: Colors.white, size: 24),
+                  const Icon(Icons.email, color: Color(0xFF293239), size: 24), // Ubah warna ikon
                   const SizedBox(width: 8),
                   Text(
                     'Masukkan email untuk reset password',
                     style: GoogleFonts.raleway(
                       textStyle: const TextStyle(
                         fontSize: 16,
-                        color: Colors.white,
+                        color: Color(0xFF293239), // Ubah warna teks menjadi gelap
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -80,9 +84,17 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                       border: InputBorder.none,
                       labelText: "Email Address",
                       hintText: "Masukkan email anda!",
-                      labelStyle: GoogleFonts.raleway(),
-                      hintStyle: GoogleFonts.raleway(),
-                      prefixIcon: const Icon(Icons.email, color: Colors.blue),
+                      labelStyle: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          color: Color(0xFF293239), // Ubah warna label menjadi gelap
+                        ),
+                      ),
+                      hintStyle: GoogleFonts.raleway(
+                        textStyle: const TextStyle(
+                          color: Color(0xff6A6A6A),
+                        ),
+                      ),
+                      prefixIcon: const Icon(Icons.email, color: Color(0xFF293239)), // Ubah warna ikon
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
@@ -114,7 +126,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade700,
+                    color: const Color(0xFF293239), // Ubah warna tombol agar serasi
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
@@ -149,7 +161,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                   style: GoogleFonts.raleway(
                     textStyle: const TextStyle(
                       fontSize: 14,
-                      color: Colors.white,
+                      color: Color(0xFF293239), // Teks berwarna gelap
                       fontWeight: FontWeight.w600,
                       decoration: TextDecoration.underline,
                     ),

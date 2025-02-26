@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
 import 'home.dart'; // Pastikan untuk mengimpor halaman home
 import 'pie.dart'; // Pastikan untuk mengimpor halaman grafik
 
@@ -34,7 +35,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tambah Transaksi', style: GoogleFonts.raleway(fontWeight: FontWeight.bold)),
+        title: Text('Tambah Transaksi', style: GoogleFonts.raleway(fontWeight: FontWeight.bold, color: Colors.white)), // Set warna judul menjadi putih
         backgroundColor: const Color(0xFF293239), // Mengubah warna AppBar
       ),
       body: GestureDetector(
@@ -193,7 +194,7 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
   InputDecoration _inputDecoration() {
     return InputDecoration(
-      border: OutlineInputBorder (),
+      border: OutlineInputBorder(),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       hintStyle: TextStyle(color: Colors.grey.shade600),
       filled: true,
@@ -208,9 +209,11 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
       });
 
       final String description = _isCustomDescription ? _customDescriptionController.text : _selectedDescription!;
+      final user = FirebaseAuth.instance.currentUser ; // Ambil user yang sedang login
 
       try {
         await FirebaseFirestore.instance.collection('transactions').add({
+          'userId': user!.uid, // Menyimpan ID pengguna
           'type': _selectedType,
           'amount': _amountController.numberValue,
           'description': description,
@@ -219,10 +222,12 @@ class _AddTransactionPageState extends State<AddTransactionPage> {
 
         widget.onTransactionAdded(_selectedType!, _amountController.numberValue, description);
 
+        // Notifikasi bahwa transaksi berhasil disimpan
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaksi Ditambahkan ke Firestore!'),
+          SnackBar(
+            content: Text('Transaksi berhasil disimpan!'),
             duration: Duration(seconds: 2),
+            backgroundColor: Colors.green, // Warna latar belakang SnackBar
           ),
         );
 

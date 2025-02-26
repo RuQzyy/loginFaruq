@@ -30,30 +30,44 @@ class _HomeState extends State<Home> {
   }
 
   void _fetchTransactions() async {
-    try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('transactions').get();
-      List<Map<String, dynamic>> transactions = snapshot.docs.map((doc) {
-        return {
-          'id': doc.id, // Menyimpan ID dokumen untuk penghapusan dan pengeditan
-          'type': doc['type'],
-          'amount': doc['amount'],
-          'description': doc['description'],
-          'date': (doc['timestamp'] as Timestamp).toDate(),
-        };
-      }).toList();
+    final user = FirebaseAuth.instance.currentUser ;
+    if (user != null) {
+      try {
+        // Mengambil data transaksi berdasarkan ID pengguna
+        QuerySnapshot snapshot = await FirebaseFirestore.instance
+            .collection('transactions')
+            .where('userId', isEqualTo: user.uid) // Filter berdasarkan user ID
+            .get();
 
-      setState(() {
-        _transactions.clear();
-        _transactions.addAll(transactions);
-        _totalBalance = _transactions.fold(0, (sum, item) {
-          return sum + (item['type'] == 'Income' ? item['amount'] : -item['amount']);
+        List<Map<String, dynamic>> transactions = snapshot.docs.map((doc) {
+          return {
+            'id': doc.id, // Menyimpan ID dokumen untuk penghapusan dan pengeditan
+            'type': doc['type'],
+            'amount': doc['amount'],
+            'description': doc['description'],
+            'date': (doc['timestamp'] as Timestamp).toDate(),
+          };
+        }).toList();
+
+        setState(() {
+          _transactions.clear();
+          _transactions.addAll(transactions);
+          _totalBalance = _transactions.fold(0, (sum, item) {
+            return sum + (item['type'] == 'Income' ? item['amount'] : -item['amount']);
+          });
         });
+      } catch (e) {
+        // Tampilkan pesan kesalahan jika gagal mengambil data
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil data: $e')),
+        );
+      }
+    } else {
+      // Jika tidak ada pengguna yang login, set total balance ke 0 dan kosongkan transaksi
+      setState(() {
+        _totalBalance = 0;
+        _transactions.clear();
       });
-    } catch (e) {
-      // Tampilkan pesan kesalahan jika gagal mengambil data
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengambil data: $e')),
-      );
     }
   }
 
@@ -278,7 +292,7 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser  ;
+    final user = FirebaseAuth.instance.currentUser ;
     List<Map<String, dynamic>> filteredTransactions = getFilteredTransactions();
 
     return Scaffold(
@@ -315,149 +329,152 @@ class _HomeState extends State<Home> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Selamat Datang di Money Tracker\nby Muhammad Al-Faruq',
-                style: GoogleFonts.raleway(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD2E5E9), // Mengubah warna latar belakang
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: [
-                    BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 5, spreadRadius: 2), // Menambahkan efek bayangan
-                  ],
+        child: SingleChildScrollView( // Membungkus seluruh konten dalam SingleChildScrollView
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Selamat Datang di Money Tracker\nby Muhammad Al-Faruq',
+                  style: GoogleFonts.raleway(fontWeight: FontWeight.bold, fontSize: 20),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Total Balance', style: GoogleFonts.raleway(fontSize: 16)),
-                    Text(
-                      _formatCurrency(_totalBalance),
-                      style: GoogleFonts.raleway(fontSize: 26, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Center(
-                child: Lottie.asset(
-                  'assets/home.json',
-                  height: 100,
-                  width: 100,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                decoration: InputDecoration(
-                  hintText: 'Cari transaksi...',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.search),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _categoryButton('Makan', Icons.fastfood, const Color(0xFF293239)), // Mengubah warna kategori
-                  _categoryButton('Joki', Icons.assignment, const Color(0xFF293239)), // Mengubah warna kategori
-                  _categoryButton('Gaji', Icons.attach_money, const Color(0xFF293239)), // Mengubah warna kategori
-                  _categoryButton('Semua', Icons.more_horiz, const Color(0xFF293239)), // Mengubah warna kategori
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('Transaksi Terbaru', style: GoogleFonts.raleway(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              Expanded(
-                child: filteredTransactions.isEmpty
-                    ? const Center(child: Text('Belum ada transaksi'))
-                    : ListView.builder(
-                        itemCount: filteredTransactions.length,
-                        itemBuilder: (context, index) {
-                          final transaction = filteredTransactions[index];
-                          final isIncome = transaction['type'] == 'Income';
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 5),
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: isIncome ? Colors.green : Colors.red,
-                                child: Icon(
-                                  isIncome ? Icons.arrow_upward : Icons.arrow_downward,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              title: Text(transaction['description']),
-                              subtitle: Text(DateFormat('dd MMM yyyy, HH:mm').format(transaction['date'])),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '${isIncome ? '+' : '-'} ${_formatCurrency(transaction['amount'])}',
-                                    style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () {
-                                      _deleteTransaction(transaction['id']);
-                                    },
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                _showEditDialog(transaction);
-                              },
-                            ),
-                          );
-                        },
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD2E5E9), // Mengubah warna latar belakang
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 5, spreadRadius: 2), // Menambahkan efek bayangan
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Total Balance', style: GoogleFonts.raleway(fontSize: 16)),
+                      Text(
+                        _formatCurrency(_totalBalance),
+                        style: GoogleFonts.raleway(fontSize: 26, fontWeight: FontWeight.bold),
                       ),
-              ),
-            ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: Lottie.asset(
+                    'assets/home.json',
+                    height: 100,
+                    width: 100,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Cari transaksi...',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _categoryButton('Makan', Icons.fastfood, const Color(0xFF293239)), // Mengubah warna kategori
+                    _categoryButton('Joki', Icons.assignment, const Color(0xFF293239)), // Mengubah warna kategori
+                    _categoryButton('Gaji', Icons.attach_money, const Color(0xFF293239)), // Mengubah warna kategori
+                    _categoryButton('Semua', Icons.more_horiz, const Color(0xFF293239)), // Mengubah warna kategori
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Text('Transaksi Terbaru', style: GoogleFonts.raleway(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 10),
+                // Menggunakan Expanded di sini untuk ListView
+                Container(
+                  height: 300, // Atur tinggi sesuai kebutuhan
+                  child: filteredTransactions.isEmpty
+                      ? const Center(child: Text('Belum ada transaksi'))
+                      : ListView.builder(
+                          itemCount: filteredTransactions.length,
+                          itemBuilder: (context, index) {
+                            final transaction = filteredTransactions[index];
+                            final isIncome = transaction['type'] == 'Income';
+                            return Card(
+                              margin: const EdgeInsets.symmetric(vertical: 5),
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: isIncome ? Colors.green : Colors.red,
+                                  child: Icon(
+                                    isIncome ? Icons.arrow_upward : Icons.arrow_downward,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                title: Text(transaction['description']),
+                                subtitle: Text(DateFormat('dd MMM yyyy, HH:mm').format(transaction['date'])),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '${isIncome ? '+' : '-'} ${_formatCurrency(transaction['amount'])}',
+                                      style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () {
+                                        _deleteTransaction(transaction['id']);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                onTap: () {
+                                  _showEditDialog(transaction);
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-     // Di bagian bottomNavigationBar
-bottomNavigationBar: BottomAppBar(
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceAround,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.home, color: Color(0xFF293239)),
-        onPressed: () {
-          // Navigasi ke halaman home
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const Home()),
-          );
-        },
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home, color: Color(0xFF293239)),
+              onPressed: () {
+                // Navigasi ke halaman home
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Home()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+              onPressed: () {
+                // Navigasi ke halaman grafik
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PieChartPage()), // Ganti dengan nama kelas yang sesuai di pie.dart
+                );
+              },
+            ),
+          ],
+        ),
       ),
-      IconButton(
-        icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
-        onPressed: () {
-          // Navigasi ke halaman grafik
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PieChartPage()), // Ganti dengan nama kelas yang sesuai di pie.dart
-          );
-        },
-      ),
-    ],
-  ),
-),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

@@ -1,4 +1,3 @@
-
 import 'package:faruqbase/pages/forgot_pass/forgot_password.dart';
 import 'package:faruqbase/pages/home/home.dart';
 import 'package:faruqbase/pages/login/google/google_auth.dart';
@@ -12,7 +11,7 @@ import 'package:lottie/lottie.dart';
 class Login extends StatefulWidget {
   const Login({super.key});
 
-@override
+  @override
   State<Login> createState() => _LoginState();
 }
 
@@ -26,10 +25,10 @@ class _LoginState extends State<Login> {
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
-@override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color.fromARGB(255, 12, 45, 94),
+      backgroundColor: const Color(0xFFFFFFFF), // Latar belakang putih
       resizeToAvoidBottomInset: true,
       bottomNavigationBar: _signup(context),
       body: SafeArea(
@@ -45,30 +44,22 @@ class _LoginState extends State<Login> {
                     'Login Account',
                     style: GoogleFonts.raleway(
                         textStyle: const TextStyle(
-                            color: Color.fromARGB(255, 255, 255, 255),
+                            color: Color(0xFF293239), // Warna teks gelap
                             fontWeight: FontWeight.bold,
                             fontSize: 32)),
                   ),
                 ),
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
                 Lottie.asset(
                   'assets/login.json',
                   height: 200,
                   fit: BoxFit.fill,
                 ),
-                const SizedBox(
-                  height: 30,
-                ),
+                const SizedBox(height: 30),
                 _emailAddress(),
-                const SizedBox(
-                  height: 20,
-                ),
+                const SizedBox(height: 20),
                 _password(),
-                const SizedBox(
-                  height: 50,
-                ),
+                const SizedBox(height: 50),
                 _signin(context),
                 Align(
                   alignment: Alignment.centerRight,
@@ -85,7 +76,7 @@ class _LoginState extends State<Login> {
                       'Forgot Password?',
                       style: GoogleFonts.raleway(
                         textStyle: const TextStyle(
-                          color: Colors.blue,
+                          color: Color(0xFF293239), // Warna teks gelap
                           fontSize: 14,
                         ),
                       ),
@@ -140,13 +131,11 @@ class _LoginState extends State<Login> {
           'Email Address',
           style: GoogleFonts.raleway(
               textStyle: const TextStyle(
-                  color: Colors.black,
+                  color: Color(0xFF293239), // Warna teks gelap
                   fontWeight: FontWeight.normal,
                   fontSize: 16)),
         ),
-        const SizedBox(
-          height: 16,
-        ),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _emailController,
           validator: (value) {
@@ -165,7 +154,7 @@ class _LoginState extends State<Login> {
                   color: Color(0xff6A6A6A),
                   fontWeight: FontWeight.normal,
                   fontSize: 14),
-              fillColor: const Color.fromARGB(255, 225, 225, 255),
+              fillColor: const Color(0xFFE3ECED), // Warna latar belakang input
               border: OutlineInputBorder(
                   borderSide: BorderSide.none,
                   borderRadius: BorderRadius.circular(14))),
@@ -183,13 +172,11 @@ class _LoginState extends State<Login> {
           'Password',
           style: GoogleFonts.raleway(
               textStyle: const TextStyle(
-                  color: Colors.black,
+                  color: Color(0xFF293239), // Warna teks gelap
                   fontWeight: FontWeight.normal,
                   fontSize: 16)),
         ),
-        const SizedBox(
-          height: 16,
-        ),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscureText,
@@ -206,7 +193,7 @@ class _LoginState extends State<Login> {
                   color: Color(0xff6A6A6A),
                   fontWeight: FontWeight.normal,
                   fontSize: 14),
-              fillColor: const Color.fromARGB(255, 225, 225, 255),
+              fillColor: const Color(0xFFE3ECED), // Warna latar belakang input
               border: OutlineInputBorder(
                   borderSide: BorderSide.none,
                   borderRadius: BorderRadius.circular(14)),
@@ -229,7 +216,7 @@ class _LoginState extends State<Login> {
   Widget _signin(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xff0D6EFD),
+        backgroundColor: const Color(0xFF293239), // Warna tombol
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
@@ -245,7 +232,7 @@ class _LoginState extends State<Login> {
         }
       },
       child: const Text(
-        "Sign In",
+        "Login",
         style: TextStyle(color: Colors.white, fontSize: 17),
       ),
     );
@@ -258,7 +245,7 @@ class _LoginState extends State<Login> {
           borderRadius: BorderRadius.circular(14),
         ),
         minimumSize: const Size(double.infinity, 60),
-        side: const BorderSide(color: Color(0xff0D6EFD)),
+        side: const BorderSide(color: Color(0xFF293239)), // Warna border
       ),
       icon: Image.network(
         'https://ouch-cdn2.icons8.com/VGHyfDgzIiyEwg3RIll1nYupfj653vnEPRLr0AeoJ8g/rs:fit:456:456/czM6Ly9pY29uczgu/b3VjaC1wcm9kLmFz/c2V0cy9wbmcvODg2/LzRjNzU2YThjLTQx/MjgtNGZlZS04MDNl/LTAwMTM0YzEwOTMy/Ny5wbmc.png',
@@ -267,7 +254,7 @@ class _LoginState extends State<Login> {
       label: const Text(
         "Sign In with Google",
         style: TextStyle(
-          color: Color(0xff0D6EFD),
+          color: Color(0xFF293239), // Warna teks
           fontSize: 17,
         ),
       ),
