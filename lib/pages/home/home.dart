@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:faruqbase/pages/home/pie.dart';
+import 'target.dart';
+
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -163,8 +165,7 @@ class _HomeState extends State<Home> {
 
   List<Map<String, dynamic>> getFilteredTransactions() {
     List<Map<String, dynamic>> filteredList = _transactions.where((transaction) {
-      final descriptionMatch = transaction['description'].toLowerCase().contains(_searchQuery.toLowerCase());
-      return descriptionMatch;
+      return transaction['description'].toLowerCase().contains(_searchQuery.toLowerCase());
     }).toList();
 
     DateTime now = DateTime.now();
@@ -364,25 +365,6 @@ class _HomeState extends State<Home> {
               ),
             ),
           ],
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: DropdownButton<String>(
-              value: _selectedCategory,
-              icon: const Icon(Icons.category, color: Colors.white),
-              dropdownColor: const Color(0xFF3B4A4D),
-              items: ['Semua', 'Makan', 'Joki', 'Gaji'].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedCategory = value!;
-                });
-              },
-            ),
-          ),
           IconButton(
             onPressed: () async {
               await AuthService().signout(context: context);
@@ -396,7 +378,7 @@ class _HomeState extends State<Home> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // Fixed here
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Selamat Datang di Money Tracker\nby Muhammad Al-Faruq',
@@ -511,31 +493,41 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.home, color: Color(0xFF293239)),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Home()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PieChartPage()),
-                );
-              },
-            ),
-          ],
-        ),
+     bottomNavigationBar: BottomAppBar(
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceAround,
+    children: [
+      IconButton(
+        icon: const Icon(Icons.home, color: Color(0xFF293239)),
+        onPressed: () {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const Home()),
+          );
+        },
       ),
+      IconButton(
+        icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const PieChartPage()),
+          );
+        },
+      ),
+      IconButton(
+        icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TargetPage()), // Arahkan ke halaman target
+          );
+        },
+      ),
+    ],
+  ),
+),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(

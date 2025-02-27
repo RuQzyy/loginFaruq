@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home.dart';
+import 'target.dart';
 
 class PieChartPage extends StatefulWidget {
   const PieChartPage({Key? key}) : super(key: key);
