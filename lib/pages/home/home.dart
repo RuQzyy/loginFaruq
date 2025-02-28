@@ -8,8 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lottie/lottie.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:faruqbase/pages/home/pie.dart';
-import 'target.dart';
-
+import 'SavingsTargetPage.dart'; // Pastikan ini ada di bagian atas file
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -493,41 +492,42 @@ class _HomeState extends State<Home> {
           ),
         ),
       ),
-     bottomNavigationBar: BottomAppBar(
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceAround,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.home, color: Color(0xFF293239)),
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const Home()),
-          );
-        },
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home, color: Color(0xFF293239)),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const Home()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PieChartPage()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SavingsTargetPage(totalBalance: _totalBalance), // Kirim total saldo
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
-      IconButton(
-        icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const PieChartPage()),
-          );
-        },
-      ),
-      IconButton(
-        icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const TargetPage()), // Arahkan ke halaman target
-          );
-        },
-      ),
-    ],
-  ),
-),
-
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
