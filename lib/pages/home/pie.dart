@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home.dart';
 import 'target.dart';
+import 'SavingsTargetPage.dart'; 
 
 class PieChartPage extends StatefulWidget {
   const PieChartPage({Key? key}) : super(key: key);
@@ -35,10 +36,13 @@ class _PieChartPageState extends State<PieChartPage> {
     'Desember',
   ];
 
+  double _totalBalance = 0; // Tambahkan variabel untuk total balance
+
   @override
   void initState() {
     super.initState();
     _fetchTransactions();
+    _fetchTotalBalance(); // Ambil total balance saat inisialisasi
   }
 
   Future<void> _fetchTransactions() async {
@@ -68,6 +72,26 @@ class _PieChartPageState extends State<PieChartPage> {
       }
     } else {
       _showErrorSnackBar('Silakan login untuk melihat grafik.');
+    }
+  }
+
+  Future<void> _fetchTotalBalance() async {
+    final user = FirebaseAuth.instance.currentUser ;
+    if (user != null) {
+      try {
+        DocumentSnapshot snapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (snapshot.exists) {
+          setState(() {
+            _totalBalance = (snapshot['totalBalance'] as num).toDouble(); // Ambil total balance dari Firestore
+          });
+        }
+      } catch (e) {
+        _showErrorSnackBar('Gagal mengambil total balance: $e');
+      }
     }
   }
 
@@ -149,7 +173,36 @@ class _PieChartPageState extends State<PieChartPage> {
           _buildLegend(),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.home, color: Color(0xFF293239)),
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
+              onPressed: () {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PieChartPage()));
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SavingsTargetPage(totalBalance: _totalBalance), // Kirim total saldo
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -250,28 +303,6 @@ class _PieChartPageState extends State<PieChartPage> {
             ],
           );
         }).toList(),
-      ),
-    );
-  }
-
-  BottomAppBar _buildBottomNavigationBar() {
-    return BottomAppBar(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.home, color: Color(0xFF293239)),
-            onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const Home()));
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
-            onPressed: () {
-              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PieChartPage()));
-            },
-          ),
-        ],
       ),
     );
   }

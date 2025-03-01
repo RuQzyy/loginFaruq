@@ -33,12 +33,15 @@ class _TargetPageState extends State<TargetPage> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       final user = FirebaseAuth.instance.currentUser ;
+      final now = DateTime.now();
       try {
         await FirebaseFirestore.instance.collection('targets').add({
           'userId': user!.uid,
           'targetAmount': double.parse(_targetController.text.replaceAll('Rp ', '').replaceAll('.', '').replaceAll(',', '.').trim()),
           'progress': 0,
           'timestamp': FieldValue.serverTimestamp(),
+          'month': now.month, // Menyimpan bulan
+          'year': now.year,   // Menyimpan tahun
         });
         _showSnackBar('Target keuangan ditambahkan!', Colors.green);
         _targetController.clear();
@@ -53,6 +56,7 @@ class _TargetPageState extends State<TargetPage> {
   Future<void> _addReminder() async {
     if (_transactionTypeController.text.isNotEmpty && _reminderAmountController.text.isNotEmpty && _selectedDate != null) {
       final user = FirebaseAuth.instance.currentUser ;
+      final now = DateTime.now();
       try {
         await FirebaseFirestore.instance.collection('reminders').add({
           'userId': user!.uid,
@@ -60,6 +64,8 @@ class _TargetPageState extends State<TargetPage> {
           'reminderAmount': double.parse(_reminderAmountController.text.replaceAll('Rp ', '').replaceAll('.', '').replaceAll(',', '.').trim()),
           'reminderDate': _selectedDate,
           'timestamp': FieldValue.serverTimestamp(),
+          'month': now.month, // Menyimpan bulan
+          'year': now.year,   // Menyimpan tahun
         });
         _showSnackBar('Pengingat transaksi ditambahkan!', Colors.blue);
         _transactionTypeController.clear();

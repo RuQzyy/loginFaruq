@@ -54,7 +54,7 @@ class SavingsTargetPage extends StatelessWidget {
                 stream: FirebaseFirestore.instance
                     .collection('targets')
                     .where('userId', isEqualTo: user?.uid)
-                    .snapshots(),
+                    .snapshots(), // Ambil semua target tanpa filter bulan dan tahun
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -63,57 +63,63 @@ class SavingsTargetPage extends StatelessWidget {
                     return _emptyState('Belum ada target tabungan!');
                   }
 
-                  // Ambil data target
-                  var target = snapshot.data!.docs.first;
-                  double targetAmount = (target['targetAmount'] as num).toDouble();
+                  return ListView(
+                    children: snapshot.data!.docs.map((target) {
+                      double targetAmount = (target['targetAmount'] as num).toDouble();
+                      double progress = targetAmount > 0 ? totalBalance / targetAmount : 0;
 
-                  // Hitung progres sebagai totalBalance / targetAmount
-                  double progress = targetAmount > 0 ? totalBalance / targetAmount : 0;
-
-                  return Card(
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Target Tabungan:',
-                              style: GoogleFonts.raleway(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 10),
-                          LinearProgressIndicator(
-                            value: progress > 1 ? 1 : progress, // Batasi nilai progres maksimum 1
-                            backgroundColor: Colors.grey[300],
-                            color: Colors.green,
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            'Rp ${_totalBalanceController.text} / Rp ${targetAmount.toStringAsFixed(0)}',
-                            style: GoogleFonts.raleway(fontSize: 16),
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                      return Card(
+                        elevation: 8,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              IconButton(
-                                icon: Icon(Icons.edit, color: Colors.blue),
-                                onPressed: () {
-                                  _showEditTargetDialog(context, target.id, targetAmount);
-                                },
+                              Text('Target Tabungan (${target['month']}/${target['year']}):',
+                                  style: GoogleFonts.raleway(
+                                      fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 10),
+                              LinearProgressIndicator(
+                                value: progress > 1 ? 1 : progress, // Batasi nilai progres maksimum 1
+                                backgroundColor: Colors.grey[300],
+                                color: Colors.green,
                               ),
-                              IconButton(
-                                icon: Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  _deleteTargetDialog(context, target.id);
-                                },
+                              const SizedBox(height: 10),
+                              Text(
+                                'Rp ${_totalBalanceController.text} / Rp ${MoneyMaskedTextController(
+                                  decimalSeparator: ',',
+                                  thousandSeparator: '.',
+                                  leftSymbol: 'Rp ',
+                                  precision: 0,
+                                  initialValue: targetAmount,
+                                ).text}',
+                                style: GoogleFonts.raleway(fontSize: 16),
+                              ),
+                              const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () {
+                                      _showEditTargetDialog(context, target.id, targetAmount);
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () {
+                                      _deleteTargetDialog(context, target.id);
+                                    },
+                                  ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -123,7 +129,7 @@ class SavingsTargetPage extends StatelessWidget {
                 stream: FirebaseFirestore.instance
                     .collection('reminders')
                     .where('userId', isEqualTo: user?.uid)
-                    .snapshots(),
+                    .snapshots(), // Ambil semua pengingat tanpa filter bulan dan tahun
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
