@@ -393,13 +393,27 @@ class _HomeState extends State<Home> {
                       BoxShadow(color: Colors.grey.withOpacity(0.5), blurRadius: 5, spreadRadius: 2),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Total Balance', style: GoogleFonts.raleway(fontSize: 16)),
-                      Text(
-                        _formatCurrency(_totalBalance),
-                        style: GoogleFonts.raleway(fontSize: 26, fontWeight: FontWeight.bold),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Total Balance', style: GoogleFonts.raleway(fontSize: 16)),
+                          Text(
+                            _formatCurrency(_totalBalance),
+                            style: GoogleFonts.raleway(fontSize: 26, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.flag, color: Color(0xFF293239)),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => SavingsTargetPage(totalBalance: _totalBalance)),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -434,7 +448,7 @@ class _HomeState extends State<Home> {
                   children: [
                     _categoryButton('Makan', Icons.fastfood, const Color(0xFF293239)),
                     _categoryButton('Joki', Icons.assignment, const Color(0xFF293239)),
-                    _categoryButton('Gaji', Icons.attach_money, const Color(0xFF293239)),
+                    _categoryButton('Gaji', Icons.attach_money , const Color(0xFF293239)),
                     _categoryButton('Semua', Icons.more_horiz, const Color(0xFF293239)),
                   ],
                 ),
@@ -511,17 +525,6 @@ class _HomeState extends State<Home> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const PieChartPage()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SavingsTargetPage(totalBalance: _totalBalance), // Kirim total saldo
-                  ),
                 );
               },
             ),

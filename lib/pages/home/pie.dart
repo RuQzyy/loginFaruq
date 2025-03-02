@@ -189,17 +189,6 @@ class _PieChartPageState extends State<PieChartPage> {
                 Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const PieChartPage()));
               },
             ),
-            IconButton(
-              icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SavingsTargetPage(totalBalance: _totalBalance), // Kirim total saldo
-                  ),
-                );
-              },
-            ),
           ],
         ),
       ),

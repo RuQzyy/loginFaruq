@@ -217,42 +217,6 @@ class SavingsTargetPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.home, color: Color(0xFF293239)),
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const Home()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.pie_chart, color: Color(0xFF293239)),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PieChartPage()),
-                );
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.flag, color: Color(0xFF293239)), // Ikon target/goal
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SavingsTargetPage(totalBalance: totalBalance), // Kirim total saldo
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
