@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:lottie/lottie.dart'; // Import Lottie
+import 'dart:convert'; // Import untuk jsonEncode
+import 'package:http/http.dart' as http; // Import untuk HTTP request
 import 'target.dart'; // Pastikan untuk mengimpor halaman target
 import 'home.dart'; // Pastikan untuk mengimpor halaman Home
 import 'pie.dart'; // Pastikan untuk mengimpor halaman PieChartPage
@@ -27,6 +29,17 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
     _firebaseMessaging = FirebaseMessaging.instance;
     _requestPermission();
     _getToken();
+    _checkTransactionReminders(); // Panggil fungsi untuk memeriksa pengingat transaksi
+
+    // Menangani notifikasi saat aplikasi aktif
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      if (message.notification != null) {
+        // Tampilkan dialog atau snackbar dengan informasi notifikasi
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message.notification!.title!)),
+        );
+      }
+    });
   }
 
   void _requestPermission() async {
@@ -49,14 +62,50 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
     }
   }
 
-  void _schedulePaymentReminder(String userId, DateTime dueDate) async {
-    // Simpan tanggal jatuh tempo pembayaran di Firestore
-    await FirebaseFirestore.instance.collection('reminders').add({
-      'userId': userId,
-      'dueDate': dueDate,
-      'reminderAmount': 100000, // Contoh jumlah, sesuaikan dengan kebutuhan
-      'transactionType': 'Pembayaran', // Contoh tipe transaksi
-    });
+  void _checkTransactionReminders() async {
+    final user = FirebaseAuth.instance.currentUser ;
+    final now = DateTime.now();
+    final threeDaysFromNow = now.add(Duration(days: 3));
+
+    // Ambil semua pengingat transaksi dari Firestore
+    final remindersSnapshot = await FirebaseFirestore.instance
+        .collection('reminders')
+        .where('userId', isEqualTo: user?.uid)
+        .get();
+
+    for (var doc in remindersSnapshot.docs) {
+      DateTime dueDate = (doc['reminderDate'] as Timestamp).toDate();
+      if (dueDate.isBefore(threeDaysFromNow) && dueDate.isAfter(now)) {
+        // Kirim notifikasi pengingat
+        _sendNotification("Pengingat Transaksi", "Anda memiliki transaksi yang jatuh tempo dalam 3 hari.");
+      }
+    }
+  }
+
+  void _sendNotification(String title, String body) async {
+    String? token = await FirebaseMessaging.instance.getToken();
+    if (token != null) {
+      final response = await http.post(
+        Uri.parse('https://fcm.googleapis.com/fcm/send'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'key=YOUR_SERVER_KEY', // Ganti dengan kunci server Anda
+        },
+        body: jsonEncode({
+          'to': token,
+          'notification': {
+            'title': title,
+            'body': body,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print("Notifikasi berhasil dikirim");
+      } else {
+        print("Gagal mengirim notifikasi: ${response.body}");
+      }
+    }
   }
 
   @override
@@ -76,7 +125,7 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
       appBar: AppBar(
         title: Text(
           'Target Tabungan',
-          style: GoogleFonts.raleway(fontWeight: FontWeight.bold, color: Colors.white), // Ubah warna teks menjadi putih
+          style: GoogleFonts.raleway(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF293239),
       ),
@@ -118,7 +167,8 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
                       return Card(
                         elevation: 8,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15)),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
                         child: Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -200,7 +250,7 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
                       Expanded(
                         child: ListView(
                           children: snapshot.data!.docs.map((doc) {
-                            Timestamp timestamp = doc['timestamp']; // Ambil timestamp
+                            Timestamp timestamp = doc['reminderDate']; // Ambil reminderDate
                             DateTime dateTime = timestamp.toDate(); // Konversi ke DateTime
                             String formattedDate = "${dateTime.toLocal()}".split(' ')[0]; // Format tanggal
 
@@ -441,13 +491,6 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
         );
       },
     );
-  }
-
-  void _sendNotification(String title, String body) {
-    // Logika untuk mengirim notifikasi menggunakan FCM
-    // Anda bisa menggunakan server untuk mengirim notifikasi ke token FCM
-    // Contoh: menggunakan HTTP POST ke endpoint FCM
-    print("Notifikasi: $title - $body");
   }
 
   Widget _emptyState(String message, String lottiePath) {

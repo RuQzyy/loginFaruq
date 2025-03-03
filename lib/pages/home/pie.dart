@@ -36,13 +36,10 @@ class _PieChartPageState extends State<PieChartPage> {
     'Desember',
   ];
 
-  double _totalBalance = 0; // Tambahkan variabel untuk total balance
-
   @override
   void initState() {
     super.initState();
     _fetchTransactions();
-    _fetchTotalBalance(); // Ambil total balance saat inisialisasi
   }
 
   Future<void> _fetchTransactions() async {
@@ -72,26 +69,6 @@ class _PieChartPageState extends State<PieChartPage> {
       }
     } else {
       _showErrorSnackBar('Silakan login untuk melihat grafik.');
-    }
-  }
-
-  Future<void> _fetchTotalBalance() async {
-    final user = FirebaseAuth.instance.currentUser ;
-    if (user != null) {
-      try {
-        DocumentSnapshot snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        if (snapshot.exists) {
-          setState(() {
-            _totalBalance = (snapshot['totalBalance'] as num).toDouble(); // Ambil total balance dari Firestore
-          });
-        }
-      } catch (e) {
-        _showErrorSnackBar('Gagal mengambil total balance: $e');
-      }
     }
   }
 

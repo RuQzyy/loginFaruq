@@ -39,9 +39,9 @@ class _TargetPageState extends State<TargetPage> {
           'userId': user!.uid,
           'targetAmount': double.parse(_targetController.text.replaceAll('Rp ', '').replaceAll('.', '').replaceAll(',', '.').trim()),
           'progress': 0,
-          'timestamp': FieldValue.serverTimestamp(),
-          'month': now.month, // Menyimpan bulan
-          'year': now.year,   // Menyimpan tahun
+          'timestamp': now.toUtc(), // Menggunakan waktu saat ini dalam UTC
+          'month': now.month,
+          'year': now.year,
         });
         _showSnackBar('Target keuangan ditambahkan!', Colors.green);
         _targetController.clear();
@@ -56,23 +56,18 @@ class _TargetPageState extends State<TargetPage> {
   Future<void> _addReminder() async {
     if (_transactionTypeController.text.isNotEmpty && _reminderAmountController.text.isNotEmpty && _selectedDate != null) {
       final user = FirebaseAuth.instance.currentUser ;
-      final now = DateTime.now();
       try {
+        // Menggunakan _selectedDate sebagai timestamp
+        DateTime reminderDate = _selectedDate!.toUtc(); // Mengubah ke UTC
         await FirebaseFirestore.instance.collection('reminders').add({
           'userId': user!.uid,
           'transactionType': _transactionTypeController.text,
           'reminderAmount': double.parse(_reminderAmountController.text.replaceAll('Rp ', '').replaceAll('.', '').replaceAll(',', '.').trim()),
-          'reminderDate': _selectedDate,
-          'timestamp': FieldValue.serverTimestamp(),
-          'month': now.month, // Menyimpan bulan
-          'year': now.year,   // Menyimpan tahun
+          'reminderDate': reminderDate, // Menggunakan tanggal yang dipilih
+          'timestamp': reminderDate, // Menggunakan tanggal yang dipilih sebagai timestamp
+          'month': reminderDate.month,
+          'year': reminderDate.year,
         });
-
-        // Logika untuk mengatur pengingat 2 hari sebelum tanggal jatuh tempo
-        DateTime reminderDate = _selectedDate!.subtract(Duration(days: 2));
-        await FirebaseFirestore.instance.collection('reminders').doc(user.uid).set({
-          'reminderDate': reminderDate,
-        }, SetOptions(merge: true));
 
         _showSnackBar('Pengingat transaksi ditambahkan!', Colors.blue);
         _transactionTypeController.clear();
@@ -153,7 +148,6 @@ class _TargetPageState extends State<TargetPage> {
                   if (value == null || value.isEmpty) {
                     return 'Harap isi target';
                   }
-                  // Perbaiki validasi untuk memeriksa angka yang valid
                   final amount = value.replaceAll('Rp ', '').replaceAll('.', '').replaceAll(',', '.').trim();
                   if (double.tryParse(amount) == null) {
                     return 'Harap masukkan angka yang valid';
