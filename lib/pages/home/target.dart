@@ -67,6 +67,13 @@ class _TargetPageState extends State<TargetPage> {
           'month': now.month, // Menyimpan bulan
           'year': now.year,   // Menyimpan tahun
         });
+
+        // Logika untuk mengatur pengingat 2 hari sebelum tanggal jatuh tempo
+        DateTime reminderDate = _selectedDate!.subtract(Duration(days: 2));
+        await FirebaseFirestore.instance.collection('reminders').doc(user.uid).set({
+          'reminderDate': reminderDate,
+        }, SetOptions(merge: true));
+
         _showSnackBar('Pengingat transaksi ditambahkan!', Colors.blue);
         _transactionTypeController.clear();
         _reminderAmountController.clear();
