@@ -10,6 +10,8 @@ import 'package:http/http.dart' as http; // Import untuk HTTP request
 import 'target.dart'; // Pastikan untuk mengimpor halaman target
 import 'home.dart'; // Pastikan untuk mengimpor halaman Home
 import 'pie.dart'; // Pastikan untuk mengimpor halaman PieChartPage
+import 'dart:io'; // Import untuk File
+import 'package:googleapis_auth/auth_io.dart'; // Import untuk autentikasi Google API
 
 class SavingsTargetPage extends StatefulWidget {
   final double totalBalance; // Variabel untuk total saldo
@@ -51,15 +53,8 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
     }
   }
 
-  void _getToken() async {
-    String? token = await _firebaseMessaging.getToken();
-    print("FCM Token: $token");
-    // Simpan token ke Firestore
-    if (token != null) {
-      await FirebaseFirestore.instance.collection('users').doc(FirebaseAuth.instance.currentUser ?.uid).set({
-        'fcmToken': token,
-      }, SetOptions(merge: true));
-    }
+  Future<String?> _getToken() async {
+    return await _firebaseMessaging.getToken(); // Mengembalikan token
   }
 
   void _checkTransactionReminders() async {
@@ -83,34 +78,57 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
   }
 
   void _sendNotification(String title, String body) async {
-    String? token = await FirebaseMessaging.instance.getToken();
-    if (token != null) {
-      final response = await http.post(
-        Uri.parse('https://fcm.googleapis.com/fcm/send'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'key=YOUR_SERVER_KEY', // Ganti dengan kunci server Anda
-        },
-        body: jsonEncode({
-          'to': token,
-          'notification': {
-            'title': title,
-            'body': body,
-          },
-        }),
-      );
+    final String fcmUrl = ' https://fcm.googleapis.com/v1/projects/YOUR_PROJECT_ID/messages:send'; // Ganti dengan ID proyek Anda
 
-      if (response.statusCode == 200) {
-        print("Notifikasi berhasil dikirim");
-      } else {
-        print("Gagal mengirim notifikasi: ${response.body}");
-      }
+    final String? token = await _getToken(); // Ambil token perangkat
+    if (token == null) {
+      print("Token tidak ditemukan");
+      return; // Keluar jika token tidak ada
     }
+
+    final Map<String, dynamic> message = {
+      "message": {
+        "token": token,
+        "notification": {
+          "title": title,
+          "body": body,
+        },
+      },
+    };
+
+    final response = await http.post(
+      Uri.parse(fcmUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${await _getAccessToken()}', // Gunakan token akses
+      },
+      body: jsonEncode(message),
+    );
+
+    if (response.statusCode == 200) {
+      print("Notifikasi berhasil dikirim");
+    } else {
+      print("Gagal mengirim notifikasi: ${response.body}");
+    }
+  }
+
+  Future<String> _getAccessToken() async {
+    // Ganti dengan path ke file JSON kredensial layanan Anda
+    final serviceAccountCredentials = ServiceAccountCredentials.fromJson(
+        await File('path/to/your/service-account-file.json').readAsString());
+
+    // Mendapatkan token akses
+    final client = await clientViaServiceAccount(
+      serviceAccountCredentials,
+      [/* Ganti dengan scope yang diperlukan */],
+    );
+
+    return client.credentials.accessToken.data;
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser ;
+    final user = FirebaseAuth.instance.currentUser  ;
 
     // Format total saldo menggunakan MoneyMaskedTextController
     final MoneyMaskedTextController _totalBalanceController = MoneyMaskedTextController(
@@ -198,7 +216,7 @@ class _SavingsTargetPageState extends State<SavingsTargetPage> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  IconButton(
+ IconButton(
                                     icon: Icon(Icons.edit, color: Colors.blue),
                                     onPressed: () {
                                       _showEditTargetDialog(context, target.id, targetAmount);
